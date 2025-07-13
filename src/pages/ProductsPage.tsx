@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
-import { products, getProductsByCategory } from '../data/products';
+// import { products, getProductsByCategory } from '../data/products';
 import { Filter } from 'lucide-react';
+import { Product } from '../types';
 
 const categories = [
   'All',
@@ -17,18 +18,57 @@ const categories = [
 const ProductsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get('category');
-  
+
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam || 'All');
-  const [filteredProducts, setFilteredProducts] = useState(products);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`${import.meta.env.VITE_MEDUSA_BACKEND_URL}/store/products`, {
+          headers: {
+            'x-publishable-api-key': import.meta.env.VITE_MEDUSA_PUBLIC_API_KEY
+          }
+        });
+        const data = await res.json();
+        // Map Medusa products to local Product type
+        const mappedProducts: Product[] = data.products.map((p: any) => ({
+          id: p.id,
+          name: p.title,
+          description: p.description || '',
+          price: p.variants && p.variants[0] ? p.variants[0].prices[0]?.amount / 100 : 0,
+          images: p.images && p.images.length > 0 ? p.images.map((img: any) => img.url) : [],
+          colors: [], // Medusa default products don't have colors; you can enhance this if you use options
+          category: p.collection?.title || 'Uncategorized',
+          featured: false, // You can set this based on a tag or custom field if needed
+          ageRange: '', // Medusa doesn't have this by default
+          weight: p.weight ? `${p.weight}g` : undefined,
+          dimensions: p.length && p.width && p.height ? `${p.length}x${p.width}x${p.height}` : undefined,
+        }));
+        setProducts(mappedProducts);
+        setFilteredProducts(mappedProducts);
+      } catch (err) {
+        setError('Failed to load products.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   useEffect(() => {
     if (selectedCategory === 'All') {
       setFilteredProducts(products);
     } else {
-      setFilteredProducts(getProductsByCategory(selectedCategory));
+      setFilteredProducts(products.filter(p => p.category === selectedCategory));
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, products]);
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
@@ -49,7 +89,6 @@ const ProductsPage: React.FC = () => {
             Safe, fun, and colorful workout equipment designed specifically for kids.
           </p>
         </div>
-        
         {/* Mobile filter button */}
         <div className="md:hidden mb-6">
           <button
@@ -60,10 +99,9 @@ const ProductsPage: React.FC = () => {
             <span>Filters</span>
           </button>
         </div>
-        
         <div className="flex flex-col md:flex-row">
           {/* Sidebar filters */}
-          <div className={`md:w-64 md:block ${showFilters ? 'block' : 'hidden'}`}>
+          <div className={`md:w-64 md:block ${showFilters ? 'block' : 'hidden'}`}> 
             <div className="bg-white p-6 rounded-lg shadow-md mb-6">
               <h3 className="font-medium text-gray-900 mb-4">Categories</h3>
               <div className="space-y-2">
@@ -83,7 +121,6 @@ const ProductsPage: React.FC = () => {
                 ))}
               </div>
             </div>
-            
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h3 className="font-medium text-gray-900 mb-4">Age Range</h3>
               <div className="space-y-2">
@@ -112,10 +149,17 @@ const ProductsPage: React.FC = () => {
               </div>
             </div>
           </div>
-          
           {/* Product grid */}
           <div className="md:flex-1 md:ml-8">
-            {filteredProducts.length === 0 ? (
+            {loading ? (
+              <div className="bg-white p-8 rounded-lg shadow text-center">
+                <p className="text-gray-600">Loading products...</p>
+              </div>
+            ) : error ? (
+              <div className="bg-white p-8 rounded-lg shadow text-center">
+                <p className="text-red-600">{error}</p>
+              </div>
+            ) : filteredProducts.length === 0 ? (
               <div className="bg-white p-8 rounded-lg shadow text-center">
                 <p className="text-gray-600">No products found in this category.</p>
               </div>
