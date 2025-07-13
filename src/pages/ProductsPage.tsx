@@ -31,6 +31,7 @@ const ProductsPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
+        console.log('MEDUSA URL:', import.meta.env.VITE_MEDUSA_BACKEND_URL);
         const res = await fetch(`${import.meta.env.VITE_MEDUSA_BACKEND_URL}/store/products`, {
           headers: {
             'x-publishable-api-key': import.meta.env.VITE_MEDUSA_PUBLIC_API_KEY
