@@ -24,19 +24,22 @@ const ProductDetailPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${import.meta.env.VITE_MEDUSA_BACKEND_URL}/store/products/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_MEDUSA_BACKEND_URL}/store/products/${id}?region_id=${import.meta.env.VITE_MEDUSA_REGION_ID}`, {
           headers: {
             'x-publishable-api-key': import.meta.env.VITE_MEDUSA_PUBLIC_API_KEY
           }
         });
-        if (!res.ok) throw new Error('Product not found');
-        const data = await res.json();
+        //console.log("response:", res)
+        //if (!res.ok) throw new Error('Product not found');
+        const data = await res.json();        
         const p = data.product;
+        console.log('data: ', p);
         const mappedProduct: Product = {
           id: p.id,
           name: p.title,
           description: p.description || '',
-          price: p.variants && p.variants[0] ? p.variants[0].prices[0]?.amount / 100 : 0,
+          //price: p.variants && p.variants[0] ? p.variants[0].prices[0]?.amount / 100 : 0,
+          price:  p.variants[0].calculated_price.calculated_amount ,
           images: p.images && p.images.length > 0 ? p.images.map((img: any) => img.url) : [],
           colors: [], // Medusa default products don't have colors; you can enhance this if you use options
           category: p.collection?.title || 'Uncategorized',
@@ -49,6 +52,7 @@ const ProductDetailPage: React.FC = () => {
         setSelectedColor(mappedProduct.colors[0] || { name: '', hex: '', available: false });
       } catch (err) {
         setError('Failed to load product.');
+        console.log('Error: ', err)
       } finally {
         setLoading(false);
       }
@@ -170,7 +174,7 @@ const ProductDetailPage: React.FC = () => {
           {/* Product details */}
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
-            <p className="text-2xl text-sky-600 font-bold mb-4">${product.price.toFixed(2)}</p>
+            <p className="text-2xl text-sky-600 font-bold mb-4">${product.price}</p>
             <div className="border-t border-b border-gray-200 py-4 my-6">
               <p className="text-gray-700 mb-6">{product.description}</p>
               <div className="mb-6">

@@ -31,19 +31,21 @@ const ProductsPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        console.log('MEDUSA URL:', import.meta.env.VITE_MEDUSA_BACKEND_URL);
-        const res = await fetch(`${import.meta.env.VITE_MEDUSA_BACKEND_URL}/store/products`, {
+        const res = await fetch(`${import.meta.env.VITE_MEDUSA_BACKEND_URL}/store/products?region_id=${import.meta.env.VITE_MEDUSA_REGION_ID}`, {        
           headers: {
             'x-publishable-api-key': import.meta.env.VITE_MEDUSA_PUBLIC_API_KEY
           }
         });
         const data = await res.json();
+        console.log("DATA: ", data)
         // Map Medusa products to local Product type
         const mappedProducts: Product[] = data.products.map((p: any) => ({
           id: p.id,
           name: p.title,
           description: p.description || '',
-          price: p.variants && p.variants[0] ? p.variants[0].prices[0]?.amount / 100 : 0,
+          price:  p.variants[0].calculated_price.calculated_amount ,
+          //price: p.variants && p.variants[0] ? p.variants[0].prices[0]?.amount / 100 : 0,
+          //Price: p.variants[0] && p.variants[0]?.calculated_amount / 100 ,
           images: p.images && p.images.length > 0 ? p.images.map((img: any) => img.url) : [],
           colors: [], // Medusa default products don't have colors; you can enhance this if you use options
           category: p.collection?.title || 'Uncategorized',
@@ -54,13 +56,16 @@ const ProductsPage: React.FC = () => {
         }));
         setProducts(mappedProducts);
         setFilteredProducts(mappedProducts);
+        
       } catch (err) {
         setError('Failed to load products.');
+        console.log('error: ', err)
       } finally {
         setLoading(false);
       }
     };
     fetchProducts();
+    
   }, []);
 
   useEffect(() => {

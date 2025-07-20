@@ -33,7 +33,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </Link>
         <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
         <div className="flex items-center justify-between mt-4">
-          <span className="text-sky-600 font-bold">${product.price.toFixed(2)}</span>
+
+          <span className="text-sky-600 font-bold">${product.price}</span>
           <div className="flex items-center">
             <div className="flex space-x-1 mr-3">
               {product.colors.slice(0, 3).map((color, index) => (
